@@ -1,36 +1,41 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #define ARR_NUM 10000000
 
-static void swap(int *a, int *b) {
-    int c = *b;
-    *b = *a;
-    *a = c;
-}
-static int _partition(int *arr, int s, int e) {
-    int pivot = arr[e];
-    int m = s;
+static void _merge(int *arr, int *tmparr, int s, int m, int e) {
+    int i1 = s, i2 = m + 1, ti = s;
+    int len = e - s + 1;
 
-    for (int i = s; i < e; ++i) {
-        if (arr[i] >= pivot)
-            continue;
-        swap(&arr[i], &arr[m]);
-        ++m;
+    memset(tmparr + s, 0, len * sizeof(int));
+
+    while (i1 <= m && i2 <= e) {
+        if (arr[i1] <= arr[i2])
+            tmparr[ti++] = arr[i1++];
+        else
+            tmparr[ti++] = arr[i2++];
     }
-    swap(&arr[e], &arr[m]);
-    return m;
+    while (i1 <= m)
+        tmparr[ti++] = arr[i1++];
+    while (i2 <= e)
+        tmparr[ti++] = arr[i2++];
+
+    memcpy(arr + s, tmparr + s, len * sizeof(int));
+
+    return;
 }
-static void _quick_sort(int *arr, int s, int e) {
+static void _merge_sort(int *arr, int *tmparr, int s, int e) {
     if (s >= e)
         return;
-    int pi = _partition(arr, s, e);
-    _quick_sort(arr, s, pi - 1);
-    _quick_sort(arr, pi + 1, e);
+    int m = (s + e) / 2;
+    _merge_sort(arr, tmparr, s, m);
+    _merge_sort(arr, tmparr, m + 1, e);
+    _merge(arr, tmparr, s ,m, e);
 }
-void quick_sort(int *arr, int len) {
-    _quick_sort(arr, 0, len - 1);
+void merge_sort(int *arr, int *tmparr, int len) {
+    _merge_sort(arr, tmparr, 0, len - 1);
 }
 
 int cmpfunc (const void * a, const void * b) {
@@ -38,8 +43,9 @@ int cmpfunc (const void * a, const void * b) {
 }
 
 void main(void) {
-    int *arr, *verarr;
+    int *arr, *tmparr, *verarr;
     arr = calloc(ARR_NUM, sizeof(int));
+    tmparr = calloc(ARR_NUM, sizeof(int));
     verarr = calloc(ARR_NUM, sizeof(int));
 
     srand(time(NULL));
@@ -55,10 +61,10 @@ void main(void) {
     double time_spent;
 
     begin = clock();
-    quick_sort(arr, ARR_NUM);
+    merge_sort(arr, tmparr, ARR_NUM);
     end = clock();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("my qsort spent %lf seconds\n", time_spent);
+    printf("my merge sort spent %lf seconds\n", time_spent);
 
     begin = clock();
     qsort(verarr, ARR_NUM, sizeof(int), cmpfunc);
@@ -73,6 +79,7 @@ void main(void) {
     }
 
     free(verarr);
+    free(tmparr);
     free(arr);
     return;
 }
