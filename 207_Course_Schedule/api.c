@@ -1,62 +1,44 @@
-typedef struct _rs {
-    bool *preq;
-} rs;
-rs *rss;
+typedef struct _lesson {
+    bool learned;
+    char blocked;
+    short len;
+    short preqc[2000];
+} lesson;
+lesson lessons[2000];
 
-typedef struct _solver {
-    bool *learned;
-    int *blocked;
-} solver;
-solver *s;
-
-bool try2learn(int noc, int c) {   
-    bool ret = true;
+bool try2learn(int noc, int c) {
     // if learned, then don't learn again
-    if (s->learned[c]) return true;
+    if (lessons[c].learned) return true;
     // if a lesson is blocked, then deadlock
-    if (s->blocked[c] >= 2) return false;
+    if (lessons[c].blocked >= 2) return false;
     // to see if any course is preq
-    for (int i = 0; i < noc; i++) {
-        if (rss[c].preq[i]) {
-            s->blocked[i]++;
-            ret = try2learn(noc, i);
-            if (!ret) return ret;
-            s->blocked[i] = 0;
-        }
+    for (int i = 0; i < lessons[c].len; i++) {
+        int prereqc = lessons[c].preqc[i];
+        int ret = true;
+        lessons[prereqc].blocked++;
+        ret = try2learn(noc, prereqc);
+        if (!ret) return ret;
+        lessons[prereqc].blocked = 0;
     }
     // learned
-    s->learned[c] = true;
+    lessons[c].learned = true;
     return true;
 }
 bool canFinish(int numCourses, int** prers, int prerequisitesSize, int* prerequisitesColSize){
     bool ret = true;
     // initialize
-    rss = calloc(numCourses, sizeof(rs));
-    for (int i = 0; i < numCourses; i++) {
-        rss[i].preq = calloc(numCourses, sizeof(bool));
-    }
-    s = calloc(1, sizeof(solver));
-    s->learned = calloc(numCourses, sizeof(bool));
-    s->blocked = calloc(numCourses, sizeof(int));
-    
+    memset(lessons, 0, numCourses * sizeof(lesson));
+
     // build relationship
     for (int i = 0; i < prerequisitesSize; i++) {
-        int c = prers[i][0], prec = prers[i][1];
-        rss[c].preq[prec] = true;
+        int c = prers[i][0], prereqc = prers[i][1];
+        lessons[c].preqc[lessons[c].len] = prereqc;
+        lessons[c].len++;
     }
     // solving
     for (int i = 0; i < numCourses; i++) {
         ret = try2learn(numCourses, i);
         if (!ret) break;
     }
-    // free
-    free(s->blocked);
-    free(s->learned);
-    free(s);
-    for (int i = 0; i < numCourses; i++) {
-        free(rss[i].preq);
-    }
-    free(rss);
-
     return ret;
 }
